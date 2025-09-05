@@ -16,7 +16,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+
+import os
 from . import views
+
 
 router = DefaultRouter()
 router.register(r'users', views.UserViewSet)
@@ -25,8 +28,28 @@ router.register(r'activities', views.ActivityViewSet)
 router.register(r'leaderboard', views.LeaderboardViewSet)
 router.register(r'workouts', views.WorkoutViewSet)
 
+# 動態產生 API URL
+def get_api_url(component):
+    codespace = os.environ.get('CODESPACE_NAME')
+    if codespace:
+        return f'https://{codespace}-8000.app.github.dev/api/{component}/'
+    return f'http://localhost:8000/api/{component}/'
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'users': get_api_url('users'),
+        'teams': get_api_url('teams'),
+        'activities': get_api_url('activities'),
+        'leaderboard': get_api_url('leaderboard'),
+        'workouts': get_api_url('workouts'),
+    })
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('', views.api_root, name='api-root'),
+    path('', api_root, name='api-root'),
 ]
